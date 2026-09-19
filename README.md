@@ -36,6 +36,46 @@ QA and architecture comparison
 
 ---
 
+## Completed Case
+
+### Phase 1 — Inherited-Site Tracking
+
+The first implementation is complete and includes:
+
+* tracking specification;
+* GTM implementation notes;
+* semantic deduplication rules;
+* GTM Preview evidence;
+* GA4 DebugView evidence;
+* documented QA defect;
+* root-cause analysis;
+* regression testing;
+* architecture limitations.
+
+One important issue discovered during QA involved `phone_view`.
+
+The original implementation relied on GTM `Once per element`, but the required analytical grain was based on:
+
+```text id="8g5m82"
+phone_label + phone_location
+```
+
+This caused a mismatch between DOM-element identity and business identity.
+
+The implementation was redesigned to apply semantic deduplication before the final GA4 event.
+
+![GA4 DebugView — Booking flow](01-inherited-site-tracking/screenshots/ga4-debugview/02-ga4-debugview-booking-form-submit.png)
+
+**Explore the completed case:**
+
+* [Phase 1 Overview](01-inherited-site-tracking/README.md)
+* [Tracking Specification](01-inherited-site-tracking/01-tracking-spec.md)
+* [Implementation Notes](01-inherited-site-tracking/02-implementation-notes.md)
+* [QA Report](01-inherited-site-tracking/03-qa-report.md)
+* [Project Summary](01-inherited-site-tracking/04-project-summary.md)
+
+---
+
 ## Phase 1 — Inherited-Site Tracking
 
 **Status: Completed**
