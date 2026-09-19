@@ -108,6 +108,59 @@ All targeted regression tests passed after the fix.
 
 ---
 
+## Selected QA Evidence
+
+### GTM Preview — Contact Form Submission
+
+The final Contact submission event is sent only after a valid pending submission is correlated with the confirmed success state.
+
+![GTM Preview — Contact form submit](screenshots/gtm-preview/02-gtm-preview-contact-form-submit.png)
+
+---
+
+### GTM Preview — Booking Flow
+
+The booking flow tracks intent, meaningful form engagement, and confirmed submission using the semantic `booking_type`.
+
+![GTM Preview — Booking CTA click](screenshots/gtm-preview/05-gtm-preview-booking-cta-click.png)
+
+![GTM Preview — Booking form submit](screenshots/gtm-preview/07-gtm-preview-booking-form-submit.png)
+
+---
+
+### GA4 DebugView — Booking Funnel
+
+GA4 DebugView confirmed the final sequence:
+
+```text
+booking_cta_click
+↓
+form_start
+↓
+form_submit
+```
+
+with the expected semantic booking context.
+
+![GA4 DebugView — Booking flow](screenshots/ga4-debugview/02-ga4-debugview-booking-form-submit.png)
+
+---
+
+### GTM Preview — Phone Tracking
+
+Phone interactions are normalized using semantic identity rather than relying only on physical DOM elements.
+
+![GTM Preview — Phone view](screenshots/gtm-preview/03-gtm-preview-phone-view.png)
+
+---
+
+### GA4 DebugView — Service Navigation
+
+Specific service navigation was confirmed in GA4 with the normalized `service_id`.
+
+![GA4 DebugView — Service link click](screenshots/ga4-debugview/04-ga4-debugview-service-link-click.png)
+
+
 ## Documentation
 
 * [Tracking Specification](01-tracking-spec.md)
