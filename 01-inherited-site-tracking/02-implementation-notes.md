@@ -44,12 +44,17 @@ GTM Element Visibility is configured with:
 Observe DOM changes = ON
 ```
 
-The technical form action is mapped to the semantic form identifier:
+The technical form action is mapped to the semantic form identifiers:
 
 ```text
 /api/public/contact
 ↓
 contact_main
+```
+```text
+/api/public/contact
+↓
+contact_page
 ```
 
 The final GA4 event includes:
