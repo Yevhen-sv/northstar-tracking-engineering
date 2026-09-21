@@ -174,26 +174,168 @@ This distinction between **DOM identity** and **business identity** became one o
 
 ## Phase 2 — Frontend Tracking Specification
 
-**Status: Planned**
+**Status: Completed**
 
-The second phase will convert the measurement requirements and limitations discovered during the inherited-site implementation into a developer-facing tracking specification.
+The second phase converts the measurement requirements, QA findings, and architecture limitations identified during the inherited-site implementation into a structured developer-facing tracking specification.
 
-The specification will define:
+The objective is to move business context closer to the application and reduce the amount of application-state reconstruction required inside GTM.
 
-* stable tracking identifiers;
-* `dataLayer` event names;
-* event parameters;
-* allowed parameter values;
-* trigger conditions;
-* negative conditions;
-* event grain;
-* deduplication responsibilities;
-* state persistence requirements;
-* SPA lifecycle behavior;
-* success confirmation requirements;
-* QA acceptance criteria.
+The target responsibility model is:
 
-The purpose is to move business context closer to the application instead of reconstructing it inside GTM.
+```text
+Application
+→ owns business truth and application state
+
+Data Layer
+→ exposes a stable tracking interface
+
+GTM
+→ owns analytics policy, transformations, deduplication, and destinations
+```
+
+The specification defines:
+
+* canonical frontend tracking events;
+* required and optional event parameters;
+* parameter types and allowed values;
+* stable business identifiers;
+* tracking-related DOM attributes;
+* form and booking lifecycle behavior;
+* SPA state and identity propagation;
+* technical duplicate prevention;
+* analytical deduplication boundaries;
+* confirmed success semantics;
+* PII boundaries;
+* legacy tracking migration rules;
+* developer-facing QA acceptance criteria.
+
+### Canonical Application Events
+
+The frontend tracking contract defines application-level events such as:
+
+```text
+contact_form_start
+contact_form_submit_success
+
+phone_click
+
+booking_cta_click
+booking_form_start
+booking_form_submit_success
+
+service_link_click
+```
+
+These events are destination-neutral.
+
+For example:
+
+```text
+booking_form_submit_success
+```
+
+can later be mapped by GTM to:
+
+```text
+GA4
+Google Ads
+Meta
+other analytics or advertising destinations
+```
+
+without requiring the frontend tracking contract to change.
+
+### Architecture Principle
+
+The specification follows one central rule:
+
+> **Frontend owns application truth. GTM owns analytics policy.**
+
+The frontend is responsible for facts it already knows directly, including:
+
+* selected business entity;
+* current booking identity;
+* real user interactions;
+* meaningful form engagement;
+* confirmed application success;
+* stable machine-readable values;
+* technical duplicate prevention.
+
+GTM remains responsible for:
+
+* visibility thresholds;
+* analytical deduplication;
+* destination-specific event mapping;
+* GA4 event naming;
+* advertising-platform routing;
+* reporting-specific transformations.
+
+### Data Layer Design
+
+Required event context must be provided atomically in the same `dataLayer.push()`.
+
+Example:
+
+```javascript
+dataLayer.push({
+  event: 'booking_cta_click',
+  booking_type: 'equipment_reservation',
+  booking_item_id: 'sup_board_001'
+});
+```
+
+Required context must not depend on stale values from previous Data Layer pushes.
+
+Business identifiers must remain stable across:
+
+```text
+initial page load
+SPA navigation
+localization
+component rerenders
+multi-step application flows
+```
+
+The specification also defines how booking identity must persist across:
+
+```text
+booking_cta_click
+↓
+booking_form_start
+↓
+booking_form_submit_success
+```
+
+without GTM reconstructing that identity from URLs, translated text, modal content, or DOM hierarchy.
+
+### QA and Acceptance Criteria
+
+The specification includes developer-facing QA requirements covering:
+
+* required event parameters;
+* current application state;
+* language-independent identifiers;
+* technical duplicate prevention;
+* preservation of legitimate repeated interactions;
+* confirmed form-success semantics;
+* booking identity continuity;
+* SPA navigation;
+* localization;
+* stale-state prevention;
+* legacy tracking migration;
+* PII boundaries;
+* regression protection for existing site behavior.
+
+The frontend tracking implementation should only be accepted when the canonical event contract, lifecycle behavior, identity propagation, and QA requirements all pass.
+
+### Documentation
+
+* [Frontend Tracking Specification Overview](02-frontend-tracking-spec/README.md)
+* [Developer Requirements](02-frontend-tracking-spec/01-developer-requirements.md)
+* [Data Layer Event Specification](02-frontend-tracking-spec/02-data-layer-event-spec.md)
+* [Tracking Identifiers](02-frontend-tracking-spec/03-tracking-identifiers.md)
+* [State and Lifecycle](02-frontend-tracking-spec/04-state-and-lifecycle.md)
+* [QA Acceptance Criteria](02-frontend-tracking-spec/05-qa-acceptance-criteria.md)
 
 ---
 
@@ -201,9 +343,9 @@ The purpose is to move business context closer to the application instead of rec
 
 **Status: Planned**
 
-After the frontend is instrumented, the same measurement model will be implemented again using structured frontend events.
+The next phase will implement the same measurement model using the structured frontend tracking contract defined in Phase 2.
 
-The expected architecture will move from patterns such as:
+The architecture will move from:
 
 ```text
 DOM / route / UI inference
@@ -218,123 +360,22 @@ GA4
 toward:
 
 ```text
-Application knows business event
+Application business fact
 ↓
-dataLayer.push(...)
+canonical dataLayer event
 ↓
 GTM validation / transformation
 ↓
-GA4
+GA4 / Ads / other destinations
 ```
 
-This phase will make it possible to compare:
+This will allow the two implementations to be compared in terms of:
 
-* implementation complexity;
 * reliability;
 * maintainability;
 * dependency on DOM structure;
 * SPA behavior;
 * semantic accuracy;
-* debugging effort.
-
----
-
-## Architecture Principle
-
-The project follows one central rule:
-
-> **GTM should act as an integration and measurement layer, not as a second frontend application.**
-
-Small and stable transformations inside GTM are reasonable.
-
-For example:
-
-* URL normalization;
-* small lookup tables;
-* semantic deduplication;
-* extracting context from a stable DOM structure.
-
-Frontend instrumentation becomes preferable when GTM would need to:
-
-* reconstruct application state;
-* maintain large business mappings;
-* carry item identity across multiple screens or steps;
-* depend heavily on translated UI text;
-* reproduce logic already known by the application.
-
----
-
-## Example: Booking Identity
-
-The inherited-site implementation tracks booking intent at category level:
-
-```text
-booking_type =
-equipment_reservation
-session_booking
-```
-
-This can be derived with reasonable confidence from stable routes and modal structure.
-
-Item-level attribution, such as:
-
-```text
-booking_item_id = guided_trip_001
-```
-
-would require the selected item identity to survive across:
-
-```text
-CTA click
-↓
-modal opening
-↓
-form_start
-↓
-successful booking
-```
-
-That state should be owned and exposed by the frontend rather than reconstructed inside GTM.
-
----
-
-## Repository Structure
-
-```text
-northstar-tracking-engineering/
-│
-├── README.md
-│
-├── 01-inherited-site-tracking/
-│   ├── README.md
-│   ├── 01-tracking-spec.md
-│   ├── 02-implementation-notes.md
-│   ├── 03-qa-report.md
-│   ├── 04-project-summary.md
-│   └── screenshots/
-│
-├── 02-frontend-tracking-spec/
-│   └── planned
-│
-└── 03-data-layer-implementation/
-    └── planned
-```
-
----
-
-## Tools
-
-* Google Tag Manager
-* Google Analytics 4
-* JavaScript
-* Data Layer
-* Browser DevTools
-* React / SPA environment
-
----
-
-## Current Status
-
-The inherited-site tracking implementation and QA are complete.
-
-The next stage is to convert the identified tracking requirements and architecture limitations into a structured frontend tracking specification.
+* implementation complexity;
+* debugging effort;
+* responsibility split between frontend and GTM.
